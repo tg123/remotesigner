@@ -1,92 +1,33 @@
 package grpcsigner_test
 
 import (
-	context "context"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/x509"
-	"math/big"
 	"net"
 	"testing"
 
 	"github.com/tg123/remotesigner"
 	"github.com/tg123/remotesigner/grpcsigner"
-	pb "github.com/tg123/remotesigner/grpcsigner"
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 )
 
-type server struct {
-	pb.UnimplementedSignerServer
-	privateKey *rsa.PrivateKey
-	cert       []byte
-}
-
-func newserver() *server {
-	s := &server{}
+func newserver() (grpcsigner.SignerServer, *rsa.PrivateKey) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		panic(err)
 	}
 
-	s.privateKey = privateKey
+	return grpcsigner.NewSignerServer(privateKey), privateKey
+}
 
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(0),
-	}
-
-	cert, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+func newsigner() (crypto.Signer, *rsa.PrivateKey, func()) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		panic(err)
 	}
 
-	s.cert = cert
-
-	return s
-}
-
-func (s *server) Sign(_ context.Context, req *grpcsigner.SignRequest) (*grpcsigner.SignReply, error) {
-	sig, err := s.privateKey.Sign(rand.Reader, req.Digest, &remotesigner.SignerOpts{
-		Algorithm: remotesigner.SignerAlgorithm(req.Algorithm),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &grpcsigner.SignReply{
-		Signature: sig,
-	}, nil
-}
-
-func (s *server) PublicKey(_ context.Context, _ *grpcsigner.PublicKeyRequest) (*grpcsigner.PublicKeyReply, error) {
-	cert, err := x509.ParseCertificate(s.cert)
-	if err != nil {
-		panic(err)
-	}
-
-	k, ok := cert.PublicKey.(*rsa.PublicKey)
-
-	if ok {
-		return &grpcsigner.PublicKeyReply{
-			Data: x509.MarshalPKCS1PublicKey(k),
-			Type: "PKCS1",
-		}, nil
-	}
-
-	data, err := x509.MarshalPKIXPublicKey(cert.PublicKey)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &grpcsigner.PublicKeyReply{
-		Data: data,
-		Type: "PKIX",
-	}, nil
-}
-
-func newsigner(impl *server) (crypto.Signer, func()) {
+	impl := grpcsigner.NewSignerServer(privateKey)
 
 	l, err := net.Listen("tcp", "0.0.0.0:0")
 	if err != nil {
@@ -105,15 +46,14 @@ func newsigner(impl *server) (crypto.Signer, func()) {
 
 	signer := remotesigner.New(grpcsigner.New(c))
 
-	return signer, func() {
+	return signer, privateKey, func() {
 		conn.Close()
 		s.Stop()
 	}
 }
 
 func TestSign(t *testing.T) {
-	impl := newserver()
-	signer, clean := newsigner(impl)
+	signer, privateKey, clean := newsigner()
 	defer clean()
 
 	for _, aglo := range []remotesigner.SignerAlgorithm{
@@ -137,7 +77,7 @@ func TestSign(t *testing.T) {
 				t.Error(err)
 			}
 
-			if err := rsa.VerifyPKCS1v15(&impl.privateKey.PublicKey, opt.HashFunc(), msg[:], sig); err != nil {
+			if err := rsa.VerifyPKCS1v15(&privateKey.PublicKey, opt.HashFunc(), msg[:], sig); err != nil {
 				t.Error(err)
 			}
 		})
@@ -145,16 +85,11 @@ func TestSign(t *testing.T) {
 }
 
 func TestPublicKey(t *testing.T) {
-	impl := newserver()
-	signer, clean := newsigner(impl)
+
+	signer, privateKey, clean := newsigner()
 	defer clean()
 
-	cert, err := x509.ParseCertificate(impl.cert)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !cert.PublicKey.(*rsa.PublicKey).Equal(signer.Public()) {
+	if !privateKey.PublicKey.Equal(signer.Public()) {
 		t.Error("wrong public key returned")
 	}
 }
