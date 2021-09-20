@@ -20,7 +20,7 @@ func New(client SignerClient) remotesigner.RemoteSigner {
 	return &wrapinst{client}
 }
 
-func (g *wrapinst) Sign(ctx context.Context, digest []byte, algo remotesigner.SignerAlgorithm) ([]byte, error) {
+func (g *wrapinst) Sign(ctx context.Context, digest []byte, algo remotesigner.SigAlgo) ([]byte, error) {
 	reply, err := g.grpc.Sign(ctx, &SignRequest{
 		Digest:    digest,
 		Algorithm: string(algo),
@@ -70,7 +70,7 @@ func NewSignerServer(signer crypto.Signer) SignerServer {
 
 func (s *server) Sign(_ context.Context, req *SignRequest) (*SignReply, error) {
 	sig, err := s.signer.Sign(rand.Reader, req.Digest, &remotesigner.SignerOpts{
-		Algorithm: remotesigner.SignerAlgorithm(req.Algorithm),
+		Algorithm: remotesigner.SigAlgo(req.Algorithm),
 	})
 
 	if err != nil {

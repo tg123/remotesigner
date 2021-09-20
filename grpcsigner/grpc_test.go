@@ -56,10 +56,14 @@ func TestSign(t *testing.T) {
 	signer, privateKey, clean := newsigner()
 	defer clean()
 
-	for _, aglo := range []remotesigner.SignerAlgorithm{
-		remotesigner.SignerAlgorithmRsaPkcs256,
-		remotesigner.SignerAlgorithmRsaPkcs384,
-		remotesigner.SignerAlgorithmRsaPkcs512,
+	for _, aglo := range []remotesigner.SigAlgo{
+		remotesigner.SigAlgoRsaPkcsSHA1,
+		remotesigner.SigAlgoRsaPkcsSHA224,
+		remotesigner.SigAlgoRsaPkcsSHA256,
+		remotesigner.SigAlgoRsaPkcsSHA384,
+		remotesigner.SigAlgoRsaPkcsSHA512,
+		// remotesigner.SigAlgoRsaPkcsSHA512_224,
+		// remotesigner.SigAlgoRsaPkcsSHA512_256,
 	} {
 
 		t.Run(string(aglo), func(t *testing.T) {
