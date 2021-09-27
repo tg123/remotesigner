@@ -12,6 +12,7 @@ service Signer {
 message SignRequest {
   bytes digest = 1;
   string algorithm  = 2;
+  string metadata = 3;
 }
 
 message SignReply {
@@ -19,6 +20,7 @@ message SignReply {
 }
 
 message PublicKeyRequest {
+  string metadata = 1;
 }
 
 message PublicKeyReply {

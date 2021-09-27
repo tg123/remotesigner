@@ -12,22 +12,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-func newserver() (grpcsigner.SignerServer, *rsa.PrivateKey) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		panic(err)
-	}
-
-	return grpcsigner.NewSignerServer(privateKey), privateKey
-}
-
 func newsigner() (crypto.Signer, *rsa.PrivateKey, func()) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		panic(err)
 	}
 
-	impl := grpcsigner.NewSignerServer(privateKey)
+	impl := grpcsigner.NewSignerServer(func(metadata string) crypto.Signer { return privateKey })
 
 	l, err := net.Listen("tcp", "0.0.0.0:0")
 	if err != nil {
