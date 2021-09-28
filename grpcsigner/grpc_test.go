@@ -18,7 +18,10 @@ func newsigner() (crypto.Signer, *rsa.PrivateKey, func()) {
 		panic(err)
 	}
 
-	impl := grpcsigner.NewSignerServer(func(metadata string) crypto.Signer { return privateKey })
+	impl, err := grpcsigner.NewSignerServer(func(metadata string) crypto.Signer { return privateKey })
+	if err != nil {
+		panic(err)
+	}
 
 	l, err := net.Listen("tcp", "0.0.0.0:0")
 	if err != nil {
@@ -35,7 +38,7 @@ func newsigner() (crypto.Signer, *rsa.PrivateKey, func()) {
 	}
 	c := grpcsigner.NewSignerClient(conn)
 
-	signer := remotesigner.New(grpcsigner.New(c))
+	signer := remotesigner.New(grpcsigner.New(c, ""))
 
 	return signer, privateKey, func() {
 		conn.Close()
