@@ -67,7 +67,7 @@ func (g *wrapinst) Public() crypto.PublicKey {
 	return nil
 }
 
-type SignerFactory func(metadata string) crypto.Signer
+type SignerFactory func(metadata string) (crypto.Signer, error)
 
 type server struct {
 	UnimplementedSignerServer
@@ -85,7 +85,11 @@ func NewSignerServer(factory SignerFactory) (SignerServer, error) {
 }
 
 func (s *server) Sign(_ context.Context, req *SignRequest) (*SignReply, error) {
-	signer := s.factory(req.Metadata)
+	signer, err := s.factory(req.Metadata)
+	if err != nil {
+		return nil, err
+	}
+	
 	sig, err := signer.Sign(rand.Reader, req.Digest, &remotesigner.SignerOpts{
 		Algorithm: remotesigner.SigAlgo(req.Algorithm),
 	})
