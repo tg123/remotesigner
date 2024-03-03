@@ -18,7 +18,7 @@ func newsigner() (crypto.Signer, *rsa.PrivateKey, func()) {
 		panic(err)
 	}
 
-	impl, err := grpcsigner.NewSignerServer(func(metadata string) crypto.Signer { return privateKey })
+	impl, err := grpcsigner.NewSignerServer(func(metadata string) (crypto.Signer, error) { return privateKey, nil })
 	if err != nil {
 		panic(err)
 	}

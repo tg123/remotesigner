@@ -89,7 +89,7 @@ func (s *server) Sign(_ context.Context, req *SignRequest) (*SignReply, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	sig, err := signer.Sign(rand.Reader, req.Digest, &remotesigner.SignerOpts{
 		Algorithm: remotesigner.SigAlgo(req.Algorithm),
 	})
@@ -104,7 +104,11 @@ func (s *server) Sign(_ context.Context, req *SignRequest) (*SignReply, error) {
 }
 
 func (s *server) PublicKey(_ context.Context, req *PublicKeyRequest) (*PublicKeyReply, error) {
-	signer := s.factory(req.Metadata)
+	signer, err := s.factory(req.Metadata)
+	if err != nil {
+		return nil, err
+	}
+	
 	p := signer.Public()
 
 	k, ok := p.(*rsa.PublicKey)
