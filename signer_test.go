@@ -17,6 +17,8 @@ type mockRemoteSigner struct {
 	lastAlgo   remotesigner.SigAlgo
 }
 
+type testContextKey string
+
 func (m *mockRemoteSigner) Sign(ctx context.Context, digest []byte, algo remotesigner.SigAlgo) ([]byte, error) {
 	m.lastCtx = ctx
 	m.lastDigest = digest
@@ -44,7 +46,7 @@ func TestSignWithSignerOpts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx := context.WithValue(context.Background(), "k", "v")
+	ctx := context.WithValue(context.Background(), testContextKey("k"), "v")
 	sig, err := signer.Sign(rand.Reader, digest, &remotesigner.SignerOpts{
 		Algorithm: remotesigner.SigAlgoRsaPkcsSHA256,
 		Context:   ctx,
