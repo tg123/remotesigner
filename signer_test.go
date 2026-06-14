@@ -97,7 +97,8 @@ func TestSignUnknownAlgorithm(t *testing.T) {
 	impl := &mockRemoteSigner{}
 	signer := remotesigner.New(impl)
 
-	_, err := signer.Sign(rand.Reader, []byte{1, 2, 3}, &remotesigner.SignerOpts{Algorithm: "UNKNOWN"})
+	digest := make([]byte, 32)
+	_, err := signer.Sign(rand.Reader, digest, &remotesigner.SignerOpts{Algorithm: "UNKNOWN"})
 	if !errors.Is(err, remotesigner.ErrUnsupportedHash) {
 		t.Fatalf("expected ErrUnsupportedHash, got %v", err)
 	}
