@@ -42,6 +42,9 @@ var (
 	// ErrUnsupportedHash is returned by Signer.Sign() when the provided hash
 	// algorithm isn't supported.
 	ErrUnsupportedHash = fmt.Errorf("unsupported hash algorithm")
+	// ErrBadDigest is returned by Signer.Sign() when the provided digest length
+	// doesn't match the hash size.
+	ErrBadDigest = fmt.Errorf("bad digest for hash")
 )
 
 type SignerOpts struct {
@@ -92,8 +95,11 @@ func (v *inst) Public() crypto.PublicKey {
 
 func (v *inst) Sign(_ io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error) {
 	hash := opts.HashFunc()
+	if hash == 0 {
+		return nil, ErrUnsupportedHash
+	}
 	if len(digest) != hash.Size() {
-		return nil, fmt.Errorf("bad digest for hash")
+		return nil, ErrBadDigest
 	}
 
 	var algo SigAlgo
