@@ -95,6 +95,9 @@ func (v *inst) Public() crypto.PublicKey {
 
 func (v *inst) Sign(_ io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error) {
 	hash := opts.HashFunc()
+	if hash == 0 {
+		return nil, ErrUnsupportedHash
+	}
 	if len(digest) != hash.Size() {
 		return nil, ErrBadDigest
 	}

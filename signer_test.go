@@ -93,6 +93,16 @@ func TestSignBadDigestLength(t *testing.T) {
 	}
 }
 
+func TestSignUnknownAlgorithm(t *testing.T) {
+	impl := &mockRemoteSigner{}
+	signer := remotesigner.New(impl)
+
+	_, err := signer.Sign(rand.Reader, []byte{1, 2, 3}, &remotesigner.SignerOpts{Algorithm: "UNKNOWN"})
+	if !errors.Is(err, remotesigner.ErrUnsupportedHash) {
+		t.Fatalf("expected ErrUnsupportedHash, got %v", err)
+	}
+}
+
 func TestSignUnsupportedHash(t *testing.T) {
 	impl := &mockRemoteSigner{}
 	signer := remotesigner.New(impl)
