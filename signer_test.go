@@ -42,9 +42,6 @@ func TestSignWithSignerOpts(t *testing.T) {
 	signer := remotesigner.New(impl)
 
 	digest := make([]byte, crypto.SHA256.Size())
-	if _, err := rand.Read(digest); err != nil {
-		t.Fatal(err)
-	}
 
 	ctx := context.WithValue(context.Background(), testContextKey("k"), "v")
 	sig, err := signer.Sign(rand.Reader, digest, &remotesigner.SignerOpts{
@@ -72,9 +69,6 @@ func TestSignWithPSSOptions(t *testing.T) {
 	signer := remotesigner.New(impl)
 
 	digest := make([]byte, crypto.SHA256.Size())
-	if _, err := rand.Read(digest); err != nil {
-		t.Fatal(err)
-	}
 
 	_, err := signer.Sign(rand.Reader, digest, &rsa.PSSOptions{Hash: crypto.SHA256})
 	if err != nil {
@@ -94,7 +88,7 @@ func TestSignBadDigestLength(t *testing.T) {
 	signer := remotesigner.New(impl)
 
 	_, err := signer.Sign(rand.Reader, []byte{1, 2, 3}, crypto.SHA256)
-	if err == nil || err.Error() != "bad digest for hash" {
+	if !errors.Is(err, remotesigner.ErrBadDigest) {
 		t.Fatalf("expected bad digest error, got %v", err)
 	}
 }
@@ -104,9 +98,6 @@ func TestSignUnsupportedHash(t *testing.T) {
 	signer := remotesigner.New(impl)
 
 	digest := make([]byte, crypto.MD5.Size())
-	if _, err := rand.Read(digest); err != nil {
-		t.Fatal(err)
-	}
 
 	_, err := signer.Sign(rand.Reader, digest, &rsa.PSSOptions{Hash: crypto.MD5})
 	if !errors.Is(err, remotesigner.ErrUnsupportedHash) {
